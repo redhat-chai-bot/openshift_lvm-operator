@@ -1340,6 +1340,7 @@ var _ = g.Describe("[sig-storage] STORAGE", func() {
 	})
 
 	g.It("Author:rdeore-High-67002-[OTP][LVMS] Check deviceSelector logic works with only optional paths [Disruptive]", g.Label("MNO", "Serial"), func() {
+		g.Skip("Temporarily disabled - OCPEDGE-2937: vg-manager retains stale devices after recreation")
 
 		g.By("Get list of available block devices/disks attached to all worker nodes")
 		freeDiskNameCountMap, err := getListOfFreeDisksFromWorkerNodes(tc)
@@ -2715,6 +2716,7 @@ spec:
 	})
 
 	g.It("Author:rdeore-High-73363-[OTP][LVMS] Check hot reload of lvmd configuration is working [Disruptive]", g.Label("SNO", "MNO", "Serial"), func() {
+		g.Skip("Temporarily disabled - OCPEDGE-2936: CSIStorageCapacity stale after LVMCluster recreation")
 
 		var (
 			storageCapacity    int
@@ -4124,6 +4126,7 @@ spec:
 	})
 
 	g.It("Author:mmakwana-High-76425-[OTP][LVMS] Make thin pool overprovisionRatio editable in LVMS [Disruptive]", g.Label("SNO", "MNO", "Serial"), func() {
+		g.Skip("Temporarily disabled - OCPEDGE-2938: OverProvisionRatio propagation race condition")
 
 		volumeGroup := "vg1"
 		storageClassName := "lvms-" + volumeGroup
@@ -5771,6 +5774,7 @@ spec:
 	})
 
 	g.It("Author:mmakwana-High-89594-[LVMS] Verify LVMCluster deviceDiscoveryPolicy is configurable [Disruptive]", g.Label("SNO", "MNO", "Serial"), func() {
+		g.Skip("Temporarily disabled - OCPEDGE-2935: Admission webhook blocks auto-discovery mode")
 
 		g.By("#1. Get list of available block devices/disks attached to all worker nodes")
 		freeDiskNameCountMap, err := getListOfFreeDisksFromWorkerNodes(tc)
