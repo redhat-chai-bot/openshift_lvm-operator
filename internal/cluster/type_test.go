@@ -7,6 +7,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +21,7 @@ func TestNewTypeResolver(t *testing.T) {
 	tests := []struct {
 		name        string
 		infra       *configv1.Infrastructure
+		microShift  *v1.ConfigMap
 		clientError error
 		want        Type
 		wantErr     bool
@@ -39,6 +41,12 @@ func TestNewTypeResolver(t *testing.T) {
 			want:        TypeOther,
 		},
 		{
+			name:        "MicroShift if infra CRD is not present and version config map exists",
+			microShift:  &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "microshift-version", Namespace: "kube-public"}},
+			clientError: &meta.NoKindMatchError{},
+			want:        TypeMicroShift,
+		},
+		{
 			name:        "error if unknown internal error occurred",
 			clientError: fmt.Errorf("im random"),
 			wantErr:     true,
@@ -50,14 +58,18 @@ func TestNewTypeResolver(t *testing.T) {
 			if tt.infra != nil {
 				builder = builder.WithObjects(tt.infra)
 			}
+			if tt.microShift != nil {
+				builder = builder.WithObjects(tt.microShift)
+			}
 			builder.WithInterceptorFuncs(interceptor.Funcs{Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				if tt.clientError != nil {
+				if _, isInfrastructure := obj.(*configv1.Infrastructure); isInfrastructure && tt.clientError != nil {
 					return tt.clientError
 				}
 				return client.Get(ctx, key, obj, opts...)
 			}})
 			scheme := runtime.NewScheme()
 			assert.NoError(t, configv1.Install(scheme))
+			assert.NoError(t, v1.AddToScheme(scheme))
 			builder = builder.WithScheme(scheme)
 			resolver := NewTypeResolver(builder.Build())
 
