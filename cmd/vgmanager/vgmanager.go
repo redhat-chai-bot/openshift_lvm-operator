@@ -87,6 +87,7 @@ type Options struct {
 
 	diagnosticsAddr string
 	healthProbeAddr string
+	clusterType     string
 }
 
 // NewCmd creates a new CLI command
@@ -108,7 +109,20 @@ func NewCmd(opts *Options) *cobra.Command {
 	cmd.Flags().StringVar(
 		&opts.healthProbeAddr, "health-probe-bind-address", DefaultHealthProbeAddr, "The address the probe endpoint binds to.",
 	)
+	cmd.Flags().StringVar(
+		&opts.clusterType, "cluster-type", "", "The cluster type resolved by the operator.",
+	)
 	return cmd
+}
+
+func parseClusterType(value string) (cluster.Type, error) {
+	clusterType := cluster.Type(value)
+	switch clusterType {
+	case cluster.TypeOCP, cluster.TypeMicroShift, cluster.TypeOther:
+		return clusterType, nil
+	default:
+		return "", fmt.Errorf("unsupported cluster type %q", value)
+	}
 }
 
 func runWithFileLock(cmd *cobra.Command, args []string, opts *Options) error {
@@ -145,14 +159,14 @@ func run(cmd *cobra.Command, _ []string, opts *Options) error {
 		return fmt.Errorf("unable to get operatorNamespace: %w", err)
 	}
 
+	clusterType, err := parseClusterType(opts.clusterType)
+	if err != nil {
+		return fmt.Errorf("unable to determine cluster type: %w", err)
+	}
+
 	setupClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: opts.Scheme})
 	if err != nil {
 		return fmt.Errorf("unable to initialize setup client for pre-manager startup checks: %w", err)
-	}
-
-	clusterType, err := cluster.NewTypeResolver(setupClient).GetType(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to determine cluster type: %w", err)
 	}
 
 	tlsOpts, tlsProfile, err := tlsprofile.NewOptions(ctx, clusterType, setupClient, opts.SetupLog)

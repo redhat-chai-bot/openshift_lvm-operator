@@ -266,6 +266,7 @@ func templateVGManagerDaemonset(
 		command = []string{"/lvms", "vgmanager"}
 	}
 
+	args = append(args, fmt.Sprintf("--cluster-type=%s", clusterType))
 	command = append(command, args...)
 
 	resourceRequirements := corev1.ResourceRequirements{
